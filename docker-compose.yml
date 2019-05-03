@@ -1,0 +1,37 @@
+version: '3.7'
+
+services:
+  app:
+    build: .
+    container_name: waldo-app
+    ports:
+      - 3000:3000
+    environment:
+      PG_CONNECTION_URI: ${PG_CONNECTION_URI}
+      AMQP_URI: ${AMQP_URI}
+    volumes:
+      - /waldo-app-thumbs
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  postgres:
+    container_name: postgres
+    image: postgres:11.2-alpine
+    ports:
+        - 5432:5432
+    environment:
+      POSTGRES_USER: ${PG_USERNAME}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.7-management-alpine
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "secretcookie"
+      RABBITMQ_DEFAULT_USER: ${AMQP_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${AMQP_PASSWORD}
