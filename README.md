@@ -82,3 +82,13 @@ Consumer should be running on the `waldo-app` container alongside the web app.
 
 - Solution should be using Python 3.7.x, and extending the given setup.
 - Git repository with any required instructions for running it, uploaded on GitHub or GitLab or BitBucket. 
+
+### CMW: NOTES/INSTRUCTIONS
+
+To run the message consumer, open `./scripts/start.sh` and uncomment the line: 
+
+```bash
+python src/services/message_consumer.py
+```
+
+The default is to run the `./src/services/web.py` app.
