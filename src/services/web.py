@@ -3,7 +3,8 @@ import logging
 import enum
 import datetime
 import uuid
-from flask import Flask, jsonify
+import pika
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Text, TIMESTAMP, Enum, SmallInteger, ForeignKey
 from sqlalchemy_utils import UUIDType
@@ -20,10 +21,16 @@ app_config: dict = {
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# instantiate flask application
+# instantiate flask application && database connection
 app = Flask(__name__)
 app.config.from_mapping(app_config)
 db = SQLAlchemy(app)
+
+# instantiate amqp params
+MESSAGE_CHANNEL_NAME = 'photo-processor'
+amqp_uri = app.config.get('AMQP_URI')
+amqp_params = pika.URLParameters(amqp_uri)
+amqp_params._socket_timeout = 5
 
 
 # photo status enum
@@ -85,16 +92,59 @@ class PhotoThumbnails(db.Model):
         }
 
 
+class ProcessPhotosRequest(object):
+
+    def __init__(self, uuids: [uuid]):
+        self.uuids = uuids
+
+    @staticmethod
+    def from_request(request_data: dict):
+        return ProcessPhotosRequest(request_data['uuids'])
+
+    def to_dict(self) -> dict:
+        return {'uuids': self.uuids}
+
+
+def process_photos(process_photos_request: ProcessPhotosRequest) -> None:
+    """
+    Publish a rabbitmq message for each photo to process as uploaded in the `ProcessPhotoRequest`.
+    Instantiate a `pika.BlockingConnection`, build a channel from the connection, declare a queue, iterate through each
+    photo primary key id uploaded in the request and publish it as a message on the queue.
+    Once finished, close the connection.
+    :param process_photos_request: `ProcessPhotosRequest`, required
+        the parsed received request for processing the photos. contains a list of photo primary keys to be processed
+    """
+    # build amqp connection and channel
+    conn = pika.BlockingConnection(amqp_params)
+    channel = conn.channel()
+    channel.queue_declare(queue=MESSAGE_CHANNEL_NAME, durable=True)
+    # publish messages
+    for i in process_photos_request.uuids:
+        photo_uuid = uuid.UUID(i)
+        channel.basic_publish(exchange='', routing_key=MESSAGE_CHANNEL_NAME, body=photo_uuid.bytes)
+
+    # close the connection
+    conn.close()
+
+
 @app.route('/')
 def index():
     return jsonify(success=True)
 
 
 @app.route('/photos/pending', methods=['GET'])
-def get_pending_photos():
+def get_pending_photos_handler():
     photos: [Photos] = Photos.query.filter_by(status=PhotoStatusEnum.PENDING.value).order_by(Photos.created_at).all()
     photos_json: [dict] = list(map(lambda i: i.to_dict(), photos))
     return jsonify(photos_json)
+
+
+@app.route('/photos/process', methods=['POST'])
+def process_photos_handler():
+    request_data = request.get_json()
+    process_photos_request: ProcessPhotosRequest = ProcessPhotosRequest.from_request(request_data)
+    process_photos(process_photos_request)
+    return jsonify(message=f'Processing {len(process_photos_request.uuids)} request')
 
 
 if __name__ == '__main__':

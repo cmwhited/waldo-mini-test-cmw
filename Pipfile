@@ -13,6 +13,7 @@ psycopg2-binary = "*"
 flask-sqlalchemy = "*"
 sqlalchemy-utils = "*"
 requests = "*"
+pika = "*"
 
 [requires]
 python_version = "3.7"
