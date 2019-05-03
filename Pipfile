@@ -10,6 +10,9 @@ pep8 = "*"
 flask = "*"
 pillow = "*"
 psycopg2-binary = "*"
+flask-sqlalchemy = "*"
+sqlalchemy-utils = "*"
+requests = "*"
 
 [requires]
 python_version = "3.7"

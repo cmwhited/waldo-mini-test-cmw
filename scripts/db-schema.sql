@@ -19,3 +19,17 @@ VALUES
   ('https://s3.amazonaws.com/waldo-thumbs-dev/large/b3cbaef4-ff6d-523e-beea-704629c42ca2.jpg'),
   ('https://s3.amazonaws.com/waldo-thumbs-dev/large/49dd12b2-f019-59c5-bf17-b1b3bb208eba.jpg'),
   ('https://s3.amazonaws.com/waldo-thumbs-dev/large/c9391205-1892-5139-abe5-b5df3ced8d61.jpg');
+
+-- cmw: adding 2 new statuses to photo_status enum type
+ALTER TYPE photo_status ADD VALUE 'processing';
+ALTER TYPE photo_status ADD VALUE 'failed';
+
+-- cmw: creating new table photo_thumbnails
+CREATE TABLE photo_thumbnails (
+  uuid UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  photo_uuid UUID NOT NULL REFERENCES photos(uuid),
+  width SMALLINT NOT NULL,
+  height SMALLINT NOT NULL,
+  url TEXT NOT NULL,
+  created_at timestamp with time zone DEFAULT now() NOT NULL
+);
