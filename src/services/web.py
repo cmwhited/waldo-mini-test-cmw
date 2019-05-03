@@ -6,7 +6,7 @@ import uuid
 import pika
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Text, TIMESTAMP, Enum, SmallInteger, ForeignKey
+from sqlalchemy import Column, Text, TIMESTAMP, Enum
 from sqlalchemy_utils import UUIDType
 
 # application configuration
@@ -59,37 +59,6 @@ class Photos(db.Model):
 
     def to_dict(self) -> dict:
         return {'uuid': self.uuid, 'url': self.url, 'status': self.status, 'created_at': self.created_at}
-
-
-# photo_thumbnails database model
-class PhotoThumbnails(db.Model):
-    __table_name__ = 'photo_thumbnails'
-
-    uuid = Column(name='uuid', type_=UUIDType(), primary_key=True, nullable=False, default=uuid.uuid4())
-    photo_uuid = Column('photo_uuid', UUIDType(), ForeignKey('photos.uuid'), nullable=False)
-    width = Column(name='width', type_=SmallInteger, nullable=False)
-    height = Column(name='height', type_=SmallInteger, nullable=False)
-    url = Column(name='url', type_=Text, nullable=False)
-    created_at = Column(name='created_at', type_=TIMESTAMP, nullable=False, default=datetime.datetime.utcnow())
-
-    def __init__(self, photo_uuid: uuid, width: int, height: int, url: str):
-        self.photo_uuid = photo_uuid
-        self.width = width
-        self.height = height
-        self.url = url
-
-    def __repr__(self):
-        return '<photo_thumbnail {}>'.format(self.uuid)
-
-    def to_dict(self) -> dict:
-        return {
-            'uuid': self.uuid,
-            'photo_uuid': self.photo_uuid,
-            'width': self.width,
-            'height': self.height,
-            'url': self.url,
-            'created_at': self.url
-        }
 
 
 class ProcessPhotosRequest(object):

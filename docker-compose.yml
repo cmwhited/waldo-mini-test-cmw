@@ -6,6 +6,7 @@ services:
     container_name: waldo-app
     ports:
       - 3000:3000
+      - 3001:3001
     environment:
       PG_CONNECTION_URI: ${PG_CONNECTION_URI}
       AMQP_URI: ${AMQP_URI}
